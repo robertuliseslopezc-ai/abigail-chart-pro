@@ -11,10 +11,10 @@ from sklearn.preprocessing import StandardScaler
 
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
-# Configuración de página ultra-compacta
+# Configuración de página ancha para ajustarse a dispositivos móviles y escritorios
 st.set_page_config(
     page_title="Abigail Chart Pro",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="collapsed",
 )
 
@@ -89,7 +89,7 @@ st.markdown(
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
-        max-width: 520px !important;
+        max-width: 100% !important;
     }
     
     .stApp {
@@ -794,5 +794,3 @@ st.markdown(
     "<div class='title-abigail'>⚡ ABIGAIL CHART PRO ⚡</div>",
     unsafe_allow_html=True,
 )
-
-
