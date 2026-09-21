@@ -11,10 +11,10 @@ from sklearn.preprocessing import StandardScaler
 
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
-# Configuración de página ancha para ajustarse a dispositivos móviles y escritorios
+# Configuración de página ultra-compacta
 st.set_page_config(
     page_title="Abigail Chart Pro",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="collapsed",
 )
 
@@ -89,7 +89,7 @@ st.markdown(
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
-        max-width: 100% !important;
+        max-width: 520px !important;
     }
     
     .stApp {
@@ -556,7 +556,7 @@ st.session_state.modo_vista = st.radio(
 )
 
 # ============================================================
-# GRAFICADOR UNIFICADO CON AJUSTE DE POSICIÓN EN MODO "AMBOS"
+# GRAFICADOR UNIFICADO CON FRANJA VELA MADRE
 # ============================================================
 @st.fragment
 def renderizar_graficos_estilo_imagen():
@@ -565,6 +565,42 @@ def renderizar_graficos_estilo_imagen():
 
     fig = go.Figure()
     shapes_list = []
+
+    # --- DETECCIÓN AUTOMÁTICA DE VELA MADRE ÚLTIMA ---
+    if not hist_df.empty and modo in ["Velas", "Ambos"]:
+        df_v = hist_df.tail(60).reset_index(drop=True)
+        
+        # Buscar la última vela madre registrada en el historial (1.00/1.09 o 10+)
+        indices_madre = df_v[df_v["rango"].isin(["1.00 / 1.09", "10+"])].index
+        if not indices_madre.empty:
+            idx_madre = indices_madre[-1]
+            row_m = df_v.loc[idx_madre]
+            
+            y_low = min(row_m["open"], row_m["close"])
+            y_high = max(row_m["open"], row_m["close"])
+            
+            # Asignar color según sea roja (1.00 / 1.09) o verde (10+)
+            if row_m["rango"] == "1.00 / 1.09":
+                col_fill = "rgba(255, 51, 51, 0.18)"
+                col_line = "rgba(255, 51, 51, 0.5)"
+            else:
+                col_fill = "rgba(0, 255, 102, 0.18)"
+                col_line = "rgba(0, 255, 102, 0.5)"
+            
+            shapes_list.append(
+                dict(
+                    type="rect",
+                    xref="paper",
+                    yref="y",
+                    x0=0,
+                    x1=1,
+                    y0=y_low,
+                    y1=y_high,
+                    fillcolor=col_fill,
+                    line=dict(color=col_line, width=1),
+                    layer="below",
+                )
+            )
 
     # --- DATOS DE VELAS ---
     if not hist_df.empty and modo in ["Velas", "Ambos"]:
