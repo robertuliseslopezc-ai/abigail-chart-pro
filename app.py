@@ -174,7 +174,7 @@ rangos = {
 }
 
 # ============================================================
-# MOTOR ANALÍTICO & VENTANA MÓVIL CON LECTURA DE FUERZA
+# MOTOR ANALÍTICO
 # ============================================================
 def verificar_permitir_senales(historial):
     if historial is None or len(historial) < 10:
@@ -556,7 +556,7 @@ st.session_state.modo_vista = st.radio(
 )
 
 # ============================================================
-# GRAFICADOR UNIFICADO CON FRANJA VELA MADRE
+# GRAFICADOR UNIFICADO LIMPIO
 # ============================================================
 @st.fragment
 def renderizar_graficos_estilo_imagen():
@@ -570,7 +570,6 @@ def renderizar_graficos_estilo_imagen():
     if not hist_df.empty and modo in ["Velas", "Ambos"]:
         df_v = hist_df.tail(60).reset_index(drop=True)
         
-        # Buscar la última vela madre registrada en el historial (1.00/1.09 o 10+)
         indices_madre = df_v[df_v["rango"].isin(["1.00 / 1.09", "10+"])].index
         if not indices_madre.empty:
             idx_madre = indices_madre[-1]
@@ -579,7 +578,6 @@ def renderizar_graficos_estilo_imagen():
             y_low = min(row_m["open"], row_m["close"])
             y_high = max(row_m["open"], row_m["close"])
             
-            # Asignar color según sea roja (1.00 / 1.09) o verde (10+)
             if row_m["rango"] == "1.00 / 1.09":
                 col_fill = "rgba(255, 51, 51, 0.18)"
                 col_line = "rgba(255, 51, 51, 0.5)"
@@ -745,6 +743,7 @@ def renderizar_graficos_estilo_imagen():
             gridcolor="#111111",
             zeroline=False,
             showgrid=True,
+            fixedrange=True,
             rangeslider=dict(visible=False),
         ),
         yaxis=dict(
@@ -753,26 +752,37 @@ def renderizar_graficos_estilo_imagen():
             gridcolor="#111111",
             zeroline=False,
             showgrid=True,
+            fixedrange=True,
         ),
     )
 
-    # RE-UBICACIÓN DEL SUB-GRAFICO (PARTE SUPERIOR DERECHA)
     if modo == "Ambos":
         layout_args["xaxis2"] = dict(
             domain=[0.62, 0.98],
             anchor="y2",
             showticklabels=False,
             gridcolor="#111111",
+            fixedrange=True,
         )
         layout_args["yaxis2"] = dict(
             domain=[0.68, 0.98],
             anchor="x2",
             showticklabels=False,
             gridcolor="#111111",
+            fixedrange=True,
         )
 
     fig.update_layout(**layout_args)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        config={
+            "displayModeBar": False,
+            "scrollZoom": False,
+            "doubleClick": "reset",
+        },
+    )
 
 renderizar_graficos_estilo_imagen()
 
