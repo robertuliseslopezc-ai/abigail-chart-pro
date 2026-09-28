@@ -60,6 +60,16 @@ if "feature_columns" not in st.session_state:
 if "modo_vista" not in st.session_state:
     st.session_state.modo_vista = "Ambos"
 
+# --- NUEVO: estado de la herramienta Fibonacci ---
+if "fib_activo" not in st.session_state:
+    st.session_state.fib_activo = False
+
+if "fib_rango" not in st.session_state:
+    st.session_state.fib_rango = None
+
+if "fib_gen" not in st.session_state:
+    st.session_state.fib_gen = 0
+
 if "historial" not in st.session_state:
     st.session_state.historial = pd.DataFrame(
         columns=[
@@ -488,6 +498,12 @@ def fn_reiniciar():
         ]
     )
 
+# --- NUEVO: activar / desactivar Fibonacci ---
+def fn_toggle_fibonacci():
+    st.session_state.fib_activo = not st.session_state.fib_activo
+    st.session_state.fib_rango = None
+    st.session_state.fib_gen += 1
+
 # ============================================================
 # RELOJ INTERACTIVO
 # ============================================================
@@ -545,14 +561,24 @@ components.html(
 )
 
 # ============================================================
-# SELECTOR DE VISTA
+# SELECTOR DE VISTA (con botón Fibonacci al lado)
 # ============================================================
-st.session_state.modo_vista = st.radio(
-    "Vista",
-    options=["Tendencia", "Velas", "Ambos"],
-    index=["Tendencia", "Velas", "Ambos"].index(st.session_state.modo_vista),
-    horizontal=True,
-    label_visibility="collapsed",
+col_vista, col_fib = st.columns([3, 1], gap="small")
+
+with col_vista:
+    st.session_state.modo_vista = st.radio(
+        "Vista",
+        options=["Tendencia", "Velas", "Ambos"],
+        index=["Tendencia", "Velas", "Ambos"].index(st.session_state.modo_vista),
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
+col_fib.button(
+    "📐 Fibonacci ✓" if st.session_state.fib_activo else "📐 Fibonacci",
+    key="btn_fib",
+    on_click=fn_toggle_fibonacci,
+    use_container_width=True,
 )
 
 # ============================================================
@@ -772,17 +798,91 @@ def renderizar_graficos_estilo_imagen():
             fixedrange=True,
         )
 
+    # --- NUEVO: FIBONACCI (solo si el botón está activo) ---
+    clave_fib = f"grafico_fib_{st.session_state.fib_gen}"
+    if st.session_state.fib_activo:
+        layout_args["dragmode"] = "select"
+        try:
+            cajas = st.session_state[clave_fib]["selection"]["box"]
+        except Exception:
+            cajas = []
+        for caja in cajas:
+            if caja.get("yref", "y") == "y" and len(caja.get("y", [])) == 2:
+                st.session_state.fib_rango = (min(caja["y"]), max(caja["y"]))
+
+    if st.session_state.fib_activo and st.session_state.fib_rango:
+        f_bajo, f_alto = st.session_state.fib_rango
+
+        # Golden zone (0.5 a 0.618) en azul casi transparente
+        shapes_list.append(
+            dict(
+                type="rect",
+                xref="paper",
+                yref="y",
+                x0=0,
+                x1=1,
+                y0=f_alto - 0.5 * (f_alto - f_bajo),
+                y1=f_alto - 0.618 * (f_alto - f_bajo),
+                fillcolor="rgba(0, 140, 255, 0.15)",
+                line=dict(color="rgba(0, 140, 255, 0.35)", width=1),
+                layer="below",
+            )
+        )
+
+        for nivel in [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1]:
+            y_nivel = f_alto - nivel * (f_alto - f_bajo)
+            shapes_list.append(
+                dict(
+                    type="line",
+                    xref="paper",
+                    yref="y",
+                    x0=0,
+                    x1=1,
+                    y0=y_nivel,
+                    y1=y_nivel,
+                    line=dict(
+                        color="#ffcc00" if nivel in (0.5, 0.618) else "rgba(255,255,255,0.45)",
+                        width=1,
+                    ),
+                )
+            )
+            fig.add_annotation(
+                xref="paper",
+                yref="y",
+                x=1,
+                y=y_nivel,
+                text=str(nivel),
+                showarrow=False,
+                xanchor="right",
+                yanchor="bottom",
+                font=dict(size=9, color="#ffcc00"),
+            )
+
     fig.update_layout(**layout_args)
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True,
-        config={
-            "displayModeBar": False,
-            "scrollZoom": False,
-            "doubleClick": "reset",
-        },
-    )
+    if st.session_state.fib_activo:
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            config={
+                "displayModeBar": False,
+                "scrollZoom": False,
+                "doubleClick": "reset",
+            },
+            on_select="rerun",
+            selection_mode="box",
+            key=clave_fib,
+        )
+    else:
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            config={
+                "displayModeBar": False,
+                "scrollZoom": False,
+                "doubleClick": "reset",
+            },
+        )
 
 renderizar_graficos_estilo_imagen()
 
@@ -840,3 +940,4 @@ st.markdown(
     "<div class='title-abigail'>⚡ ABIGAIL CHART PRO ⚡</div>",
     unsafe_allow_html=True,
 )
+
