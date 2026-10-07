@@ -265,7 +265,7 @@ def lectura_retroceso(fuerzas):
     if len(fuerzas) < 2:
         return False, "ninguno"
     actual = fuerzas[-1]
-    anteriores = fuerzas[:-1]
+    anteriores = fuerzas[-4:-1]
     if actual < 0 and max(anteriores) > 0:
         return True, "bajista"
     if actual > 0 and min(anteriores) < 0:
@@ -940,4 +940,3 @@ st.markdown(
     "<div class='title-abigail'>⚡ ABIGAIL CHART PRO ⚡</div>",
     unsafe_allow_html=True,
 )
-
